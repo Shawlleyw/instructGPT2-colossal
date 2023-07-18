@@ -18,9 +18,11 @@ class Tokenizer:
             padding_side="right",
         )
         self.num_new_tokens = self.base_tokenizer.add_special_tokens(self.special_tokens)
+        print(">>> Tokenizer is loaded")
 
     def resize_model(self, model):
         model.resize_token_embeddings(len(self.base_tokenizer))
+        # initialize new tokens
         if self.num_new_tokens > 0:
             input_embeddings = model.get_input_embeddings().weight.data
             output_embeddings = model.get_output_embeddings().weight.data

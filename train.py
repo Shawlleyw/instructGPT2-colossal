@@ -78,12 +78,13 @@ def train():
         num_warmup_steps = WARMUP_RATE * total_steps, 
         num_training_steps = total_steps,
     )
-    
     model, optimizer, _, _, lr_scheduler = booster.boost(model, optimizer=optimizer, lr_scheduler=lr_scheduler)
     
     for epoch in range(EPOCHS):
         train_epoch(epoch, model, optimizer, lr_scheduler, dataloader, booster, coordinator)
+    booster.save_model(model, "./ckpt/model.pth")
 
 
 if __name__ == '__main__':
     train()
+

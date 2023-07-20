@@ -64,7 +64,11 @@ def train():
     tokenizer = Tokenizer(PRETRAIN_MODEL, args.max_tokens)
     
     data = dataset.prepare_dataset(args.data_path, tokenizer)
-    collator = dataset.DataCollator(input_pad=tokenizer.base_tokenizer.pad_token_id, label_pad=tokenizer.IGNORE_INDEX)
+    collator = dataset.DataCollator(
+        input_pad=tokenizer.base_tokenizer.pad_token_id, 
+        label_pad=tokenizer.IGNORE_INDEX, 
+        tokenizer=tokenizer,
+    )
     
     model = transformers.AutoModelForCausalLM.from_pretrained(PRETRAIN_MODEL)
     tokenizer.resize_model(model)
@@ -82,7 +86,7 @@ def train():
     
     for epoch in range(EPOCHS):
         train_epoch(epoch, model, optimizer, lr_scheduler, dataloader, booster, coordinator)
-    booster.save_model(model, "./ckpt/model.pth")
+    # booster.save_model(model, "./ckpt/model.pth")
 
 
 if __name__ == '__main__':

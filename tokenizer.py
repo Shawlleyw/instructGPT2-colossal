@@ -33,13 +33,12 @@ class Tokenizer:
             input_embeddings[-self.num_new_tokens:] = input_embeddings_avg
             output_embeddings[-self.num_new_tokens:] = output_embeddings_avg
     
-    def __call__(self, input_str):
-        assert(type(input_str) == str) # process one seq each time
+    def __call__(self, input_texts):
         tokenized = self.base_tokenizer(
-            input_str,
+            input_texts,
             return_tensors="pt",
             padding="longest",
             max_length=self.base_tokenizer.model_max_length,
             truncation=True,
         )
-        return tokenized.input_ids[0]
+        return tokenized.input_ids

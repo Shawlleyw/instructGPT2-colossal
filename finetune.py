@@ -11,6 +11,8 @@ from colossalai.booster.plugin import GeminiPlugin, LowLevelZeroPlugin, TorchDDP
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
 
+from peft import get_peft_model, LoraConfig, TaskType
+
 from tqdm import tqdm
 
 PRETRAIN_MODEL = "GPT2"
@@ -73,6 +75,13 @@ def train():
     model = transformers.AutoModelForCausalLM.from_pretrained(PRETRAIN_MODEL)
     tokenizer.resize_model(model)
     
+    peft_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1
+    )
+    
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters()
+    
     dataloader = plugin.prepare_dataloader(data, batch_size=args.batch_size, collate_fn=collator, shuffle=True, drop_last=True)
         
     optimizer = HybridAdam(model.parameters(), lr=lr)
@@ -87,7 +96,8 @@ def train():
     for epoch in range(EPOCHS):
         train_epoch(epoch, model, optimizer, lr_scheduler, dataloader, booster, coordinator)
     if coordinator.is_master():
-        booster.save_model(model, "./ckpt/model.pth")
+        # booster.save_model(model, "./ckpt/model.pth")
+        model.save_pretrained("ckpt-lora")
 
 
 if __name__ == '__main__':

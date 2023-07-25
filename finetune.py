@@ -74,7 +74,7 @@ def train():
         tokenizer=tokenizer,
     )
     
-    model = transformers.AutoModelForCausalLM.from_pretrained(PRETRAIN_MODEL)
+    model = transformers.AutoModelForCausalLM.from_pretrained(PRETRAIN_MODEL, device_map="auto", load_in_8bit=True)
     
     tokenizer.resize_model(model)
     
@@ -95,13 +95,14 @@ def train():
         num_training_steps = total_steps,
     )
     model, optimizer, _, _, lr_scheduler = booster.boost(model, optimizer=optimizer, lr_scheduler=lr_scheduler)
-    utils.print_memory_usage("Before training: ")
     
+    utils.print_memory_usage("Before training: ")
     for epoch in range(EPOCHS):
         train_epoch(epoch, model, optimizer, lr_scheduler, dataloader, booster, coordinator)
     if coordinator.is_master():
         # booster.save_model(model, "./ckpt/model.pth")
         model.unwrap().save_pretrained("ckpt-lora")
+    utils.print_memory_usage("After training: ")
 
 
 if __name__ == '__main__':

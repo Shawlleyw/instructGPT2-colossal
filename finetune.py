@@ -3,6 +3,7 @@ import dataset
 from tokenizer import Tokenizer
 
 import transformers
+import torch
 from transformers import get_linear_schedule_with_warmup
 
 import colossalai
@@ -15,26 +16,27 @@ from peft import get_peft_model, LoraConfig, TaskType
 
 from tqdm import tqdm
 
+import utils
+
 PRETRAIN_MODEL = "GPT2"
 LEARNING_RATE = 2.4e-5
-EPOCHS = 3
+EPOCHS = 1
 WARMUP_RATE = 0.1
 
 def train_epoch(epoch, model, optimizer, lr_sched, dataloader, booster, coord):
     model.train()
-    
     with tqdm(dataloader, desc=f"epoch: {epoch + 1} / {EPOCHS}", disable=not coord.is_master()) as pbar:
         for batch in pbar:
             batch = {k: v.cuda() for k, v in batch.items()}
             outputs = model(**batch)
+            # utils.print_memory_usage()
             loss = outputs.loss
-            
             booster.backward(loss, optimizer)
             optimizer.step()
             optimizer.zero_grad()
             lr_sched.step()
-            
             pbar.set_postfix({'loss': loss.item()})
+            
             
 
 def train():
@@ -73,6 +75,7 @@ def train():
     )
     
     model = transformers.AutoModelForCausalLM.from_pretrained(PRETRAIN_MODEL)
+    
     tokenizer.resize_model(model)
     
     peft_config = LoraConfig(
@@ -92,12 +95,13 @@ def train():
         num_training_steps = total_steps,
     )
     model, optimizer, _, _, lr_scheduler = booster.boost(model, optimizer=optimizer, lr_scheduler=lr_scheduler)
+    utils.print_memory_usage("Before training: ")
     
     for epoch in range(EPOCHS):
         train_epoch(epoch, model, optimizer, lr_scheduler, dataloader, booster, coordinator)
     if coordinator.is_master():
         # booster.save_model(model, "./ckpt/model.pth")
-        model.save_pretrained("ckpt-lora")
+        model.unwrap().save_pretrained("ckpt-lora")
 
 
 if __name__ == '__main__':

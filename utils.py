@@ -22,10 +22,28 @@ def polish_by_prompt(record):
     global prompt_input, prompt_no_input
     return prompt_input.format_map(record) if ("input" in record) else prompt_no_input.format_map(record)
 
-def print_memory_usage(prefix):
-    def toGB(mem):
-        return mem / 1024 / 1024 / 1024
-    used_mem = torch.cuda.memory_allocated()
-    reserved_mem = torch.cuda.memory_reserved()
-    max_mem = torch.cuda.max_memory_allocated()
-    print(prefix+"memory usage: {0:.2f}GB/{1:.2f}GB, max: {2:.2f}GB".format(toGB(used_mem), toGB(used_mem + reserved_mem), toGB(max_mem)))
+class MemoryTracker:
+    
+    def __init__(self, prefix, enabled = False):
+        self.prefix = prefix
+        self.enabled = enabled
+        
+    
+    def __enter__(self):
+        if self.enabled:
+            self.print_memory_usage("Before " + self.prefix)
+        
+    def __exit__(self):
+        if self.enabled:
+            self.print_memory_usage("After " + self.prefix)
+        
+    def print_memory_usage(prefix):
+        def toGB(mem):
+            return mem / 1024 / 1024 / 1024
+        used_mem = torch.cuda.memory_allocated()
+        reserved_mem = torch.cuda.memory_reserved()
+        max_mem = torch.cuda.max_memory_allocated()
+        print(prefix+" memory usage: {0:.2f}GB/{1:.2f}GB, max: {2:.2f}GB".format(toGB(used_mem), toGB(used_mem + reserved_mem), toGB(max_mem)))
+        
+        
+

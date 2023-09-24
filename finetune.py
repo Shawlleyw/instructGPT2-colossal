@@ -12,13 +12,9 @@ from colossalai.booster.plugin import GeminiPlugin, LowLevelZeroPlugin, TorchDDP
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
 
-
 from peft import get_peft_model, LoraConfig, TaskType
-
 from tqdm import tqdm
-
 import utils
-
 
 def train_epoch(epoch, total_epoch, model, optimizer, lr_sched, dataloader, booster, coord):
     model.train()
@@ -72,7 +68,7 @@ def train(args):
     lora_model = LoRAWapper(pretrained_model)
     
     dataloader = plugin.prepare_dataloader(data, batch_size=args.batch_size, collate_fn=collator, shuffle=True, drop_last=True)
-        
+
     optimizer = HybridAdam(lora_model.parameters(), lr=lr)
     total_steps = len(dataloader) * args.epoch
     lr_scheduler = get_linear_schedule_with_warmup(

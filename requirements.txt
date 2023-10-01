@@ -1,4 +1,4 @@
-transformer
+transformers
 torch
 tqdm
 colossalai

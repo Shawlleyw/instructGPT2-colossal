@@ -1,4 +1,5 @@
 import argparse
+import os
 import torch
 import dataset
 import hyper_params
@@ -16,6 +17,7 @@ from colossalai.nn.optimizer import HybridAdam
 from peft import get_peft_model, LoraConfig, TaskType
 from tqdm import tqdm
 import utils
+
 
 def train_epoch(epoch, total_epoch, model, optimizer, lr_sched, dataloader, booster, coord):
     model.train()
@@ -99,8 +101,11 @@ def main():
     parser.add_argument("--data", type=str, dest="data_path", required=True, help="specify data path")
     parser.add_argument("--tokens", type=int, dest="max_tokens", default=512, help="specify max tokens")
     parser.add_argument("--plugin", type=str, dest="plugin", default="torch_ddp", choices=["torch_ddp", 'gemini', 'low_level_zero'], help="specify a plugin")
+    parser.add_argument("--ckpt", type=str, dest="ckpt", default=None, required=True, type=str, help="Path to save LoRA parameters")
     
     args = parser.parse_args()
+    assert(not os.path.exists(args.ckpt))
+    
     train(args)
     
 if __name__ == '__main__':

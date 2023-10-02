@@ -30,3 +30,9 @@ optional arguments:
   --plugin {torch_ddp,gemini,low_level_zero}
                         specify a plugin
 ```
+
+## Example
+
+```shell
+OMP_NUM_THREADS=4 colossalai run --nproc_per_node 4 finetune.py --epoch 3 --model  meta-llama/Llama-2-7b-chat-hf --data ../batch-scheduler/results/wild_insts/70b_results --plugin low_level_zero
+```

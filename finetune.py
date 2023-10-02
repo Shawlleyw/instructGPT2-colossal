@@ -1,4 +1,5 @@
 import argparse
+import torch
 import dataset
 import hyper_params
 from tokenizer import Tokenizer
@@ -55,7 +56,7 @@ def train(args):
     booster = Booster(plugin=plugin)
     
     tokenizer = Tokenizer(args.model, args.max_tokens)
-    pretrained_model = transformers.AutoModelForCausalLM.from_pretrained(args.model, device_map="auto", load_in_8bit=True)
+    pretrained_model = transformers.AutoModelForCausalLM.from_pretrained(args.model, device_map={'':torch.cuda.current_device()}, torch_dtype=torch.float16)
     tokenizer.resize_model(pretrained_model)
     
     data = dataset.prepare_dataset(args.data_path, tokenizer)

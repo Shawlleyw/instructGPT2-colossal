@@ -33,7 +33,7 @@ class MemoryTracker:
         if self.enabled:
             self.print_memory_usage("Before " + self.prefix)
         
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         if self.enabled:
             self.print_memory_usage("After " + self.prefix)
         

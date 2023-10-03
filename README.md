@@ -34,5 +34,5 @@ optional arguments:
 ## Example
 
 ```shell
-OMP_NUM_THREADS=4 colossalai run --nproc_per_node 4 finetune.py --epoch 3 --model  meta-llama/Llama-2-7b-chat-hf --data ../batch-scheduler/results/wild_insts/70b_results --plugin low_level_zero
+OMP_NUM_THREADS=4 colossalai run --nproc_per_node 4 src/finetune.py --epoch 3 --model  meta-llama/Llama-2-7b-chat-hf --data ./data/70b_results --plugin low_level_zero --ckpt llama2-7b-lora
 ```

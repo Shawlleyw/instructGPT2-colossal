@@ -51,7 +51,7 @@ def train(args):
     if args.plugin == "torch_ddp":
         plugin = TorchDDPPlugin()
     elif args.plugin == "gemini":
-        plugin = GeminiPlugin(placement_policy='cuda', strict_ddp_mode=True, initial_scale=2**5)
+        plugin = GeminiPlugin(placement_policy='auto', strict_ddp_mode=True, initial_scale=2**5)
     elif args.plugin == "low_level_zero":
         plugin = LowLevelZeroPlugin(initial_scale=2**5)
         

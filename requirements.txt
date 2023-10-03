@@ -1,8 +1,7 @@
 transformers
-torch
 tqdm
+torch
 colossalai
 datasets
 bitsandbytes
 peft
-torch==1.13.1

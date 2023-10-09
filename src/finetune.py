@@ -10,7 +10,7 @@ from transformers import get_linear_schedule_with_warmup
 
 import colossalai
 from colossalai.booster import Booster
-from colossalai.booster.plugin import GeminiPlugin, LowLevelZeroPlugin, TorchDDPPlugin
+from colossalai.booster.plugin import GeminiPlugin, LowLevelZeroPlugin, TorchDDPPlugin, TorchFSDPPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
 
@@ -18,14 +18,14 @@ from peft import get_peft_model, LoraConfig, TaskType
 from tqdm import tqdm
 import utils
 
-
 def train_epoch(epoch, total_epoch, model, optimizer, lr_sched, dataloader, booster, coord):
     model.train()
     with tqdm(dataloader, desc=f"epoch: {epoch + 1} / {total_epoch}", disable=not coord.is_master()) as pbar:
         for batch in pbar:
+            #torch.cuda.empty_cache()
             batch = {k: v.cuda() for k, v in batch.items()}
+            #print(batch['labels'].size())
             outputs = model(**batch)
-            # utils.print_memory_usage()
             loss = outputs.loss
             booster.backward(loss, optimizer)
             optimizer.step()
@@ -51,14 +51,18 @@ def train(args):
     if args.plugin == "torch_ddp":
         plugin = TorchDDPPlugin()
     elif args.plugin == "gemini":
-        plugin = GeminiPlugin(placement_policy='auto', strict_ddp_mode=True, initial_scale=2**5)
+        plugin = GeminiPlugin(placement_policy='static', strict_ddp_mode=True)
     elif args.plugin == "low_level_zero":
-        plugin = LowLevelZeroPlugin(initial_scale=2**5)
+        plugin = LowLevelZeroPlugin(stage=2, cpu_offload=True)
+    elif args.plugin == "torch_fsdp":
+        plugin = TorchFSDPPlugin()
+    else:
+        plugin = None
         
     booster = Booster(plugin=plugin)
     
     tokenizer = Tokenizer(args.model, args.max_tokens)
-    pretrained_model = transformers.AutoModelForCausalLM.from_pretrained(args.model, device_map={'':torch.cuda.current_device()}, torch_dtype=torch.float16)
+    pretrained_model = transformers.AutoModelForCausalLM.from_pretrained(args.model, device_map={'':torch.cuda.current_device()}, torch_dtype=torch.float16) 
     tokenizer.resize_model(pretrained_model)
     
     data = dataset.prepare_dataset(args.data_path, tokenizer)
@@ -70,7 +74,10 @@ def train(args):
     
     lora_model = LoRAWapper(pretrained_model)
     
-    dataloader = plugin.prepare_dataloader(data, batch_size=args.batch_size, collate_fn=collator, shuffle=True, drop_last=True)
+    if plugin:
+        dataloader = plugin.prepare_dataloader(data, batch_size=args.batch_size, collate_fn=collator, shuffle=True, drop_last=True)
+    else:
+       dataloader = torch.utils.data.dataloader.DataLoader(data, batch_size=args.batch_size, collate_fn=collator, shuffle=True, drop_last=True)
 
     optimizer = HybridAdam(lora_model.parameters(), lr=lr)
     total_steps = len(dataloader) * args.epoch
@@ -100,7 +107,7 @@ def main():
     parser.add_argument("--batch", type=int, dest="batch_size", default=4, help="specify batch size")
     parser.add_argument("--data", type=str, dest="data_path", required=True, help="specify data path")
     parser.add_argument("--tokens", type=int, dest="max_tokens", default=512, help="specify max tokens")
-    parser.add_argument("--plugin", type=str, dest="plugin", default="torch_ddp", choices=["torch_ddp", 'gemini', 'low_level_zero'], help="specify a plugin")
+    parser.add_argument("--plugin", type=str, dest="plugin", default="torch_ddp", choices=["torch_ddp", 'gemini', 'low_level_zero', 'torch_fsdp'], help="specify a plugin")
     parser.add_argument("--ckpt", type=str, dest="ckpt", default=None, required=True, help="Path to save LoRA parameters")
     
     args = parser.parse_args()

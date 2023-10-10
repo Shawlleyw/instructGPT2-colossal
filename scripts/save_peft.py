@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--adapter")
     parser.add_argument("--save", dest="save_path")
     
-    args = parser.parse()
+    args = parser.parse_args()
     
     if args.model in llama2_models:
         args.model = llama2_models[args.model]
